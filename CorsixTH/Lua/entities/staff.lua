@@ -163,6 +163,7 @@ end
 
 function Staff:tick()
   Entity.tick(self)
+
   -- don't do anything if they're fired or picked up or have no hospital
   if self.fired or self.pickup or not self.hospital then
     return
@@ -211,6 +212,10 @@ function Staff:tick()
     end
   end)
   self:updateSpeed()
+
+  if self.behavior_tree then
+    self.behavior_tree:Tick()
+  end
 end
 
 function Staff:checkIfWaitedTooLong()
@@ -279,8 +284,10 @@ function Staff:isTiring()
     tiring = false
   end
 
+  local action = self:tryGetCurrentAction()
+
   -- Picking staff members up doesn't tire them, it just tires the player.
-  if self:getCurrentAction().name == "pickup" then
+  if action and action.name == "pickup" then
     tiring = false
   end
 
@@ -1061,12 +1068,3 @@ end
 
 -- Dummy callback for savegame compatibility
 local callbackNewRoom = --[[persistable:staff_build_staff_room_callback]] function(room) end
-
-function Staff:tick()
-  Entity.tick(self) -- base call
-
-  if self.behavior_tree then
-    self.behavior_tree:Tick()
-  end
-end
-
