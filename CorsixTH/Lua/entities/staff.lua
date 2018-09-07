@@ -18,7 +18,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE. --]]
 
+corsixth.require("behavior_trees/behavior_tree")
+corsixth.require("behavior_trees/action_idle")
+corsixth.require("behavior_trees/condition_emptyactionqueue")
 corsixth.require("announcer")
+
+local BehaviorTree = _G["BehaviorTree"]
+local ActionIdle = _G["ActionIdle"]
+local ConditionEmptyActionQueue = _G["ConditionEmptyActionQueue"]
 
 local AnnouncementPriority = _G["AnnouncementPriority"]
 
@@ -96,15 +103,20 @@ function Staff:tickDay()
   self.world:findObjectNear(self, "tv", 2, function(x, y)
     self:changeAttribute("happiness", 0.0005)
   end)
-  -- Being able to rest from work and play the video game or pool will make you happy
-  if (self:getCurrentAction().name == "use_object" and self:getCurrentAction().object.object_type.id == "video_game") then
-   self:changeAttribute("happiness", 0.08)
-  end
-  if (self:getCurrentAction().name == "use_object" and self:getCurrentAction().object.object_type.id == "pool_table") then
-   self:changeAttribute("happiness", 0.074)
-  end
-  if (self:getCurrentAction().name == "use_object" and self:getCurrentAction().object.object_type.id == "sofa") then
-   self:changeAttribute("happiness", 0.05)
+
+  local action = self:tryGetCurrentAction()
+
+  if action then
+    -- Being able to rest from work and play the video game or pool will make you happy
+    if (action.name == "use_object" and action.object.object_type.id == "video_game") then
+      self:changeAttribute("happiness", 0.08)
+    end
+    if (action.name == "use_object" and action.object.object_type.id == "pool_table") then
+      self:changeAttribute("happiness", 0.074)
+    end
+    if (action.name == "use_object" and action.object.object_type.id == "sofa") then
+      self:changeAttribute("happiness", 0.05)
+    end
   end
 
   --TODO windows in your work space and a large space to work in add to happiness
@@ -477,6 +489,12 @@ function Staff:setProfile(profile)
   self:setLayer(5, profile.layer5)
   self:updateStaffTitle()
   self.waiting_for_staffroom = false -- Staff member has detected there is no staff room to rest.
+
+  self.behavior_tree = BehaviorTree(
+    ConditionEmptyActionQueue(self,
+        ActionIdle(self)
+    )
+  )
 end
 
 function Staff:needsWorkStation()
@@ -673,7 +691,6 @@ function Staff:onPlaceInCorridor()
     self.task = nil
   end
   self:updateSpeed()
-  self:setNextAction(MeanderAction())
   if self.humanoid_class == "Receptionist" then
     world:findObjectNear(self, "reception_desk", nil, function(x, y)
       local obj = world:getObject(x, y, "reception_desk")
@@ -1044,3 +1061,12 @@ end
 
 -- Dummy callback for savegame compatibility
 local callbackNewRoom = --[[persistable:staff_build_staff_room_callback]] function(room) end
+
+function Staff:tick()
+  Entity.tick(self) -- base call
+
+  if self.behavior_tree then
+    self.behavior_tree:Tick()
+  end
+end
+
