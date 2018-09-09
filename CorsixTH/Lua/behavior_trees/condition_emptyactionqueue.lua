@@ -14,11 +14,11 @@ function ConditionEmptyActionQueue:ConditionEmptyActionQueue(humanoid, child)
 end
 
 -- override
-function ConditionEmptyActionQueue:Visit()
+function ConditionEmptyActionQueue:Visit(memory)
   local queue_count = (self.humanoid.action_queue and #self.humanoid.action_queue) or 0
 
   if queue_count == 0 then
-    self.child:Visit()
+    self.child:Visit(memory)
     self:SetState(self.child.state)
   else
     self:Fail()

@@ -692,9 +692,7 @@ end
 
 function Humanoid:handleRemovedObject(object)
   local replacement_action
-  if self.humanoid_class and self.humanoid_class == "Receptionist" then
-    replacement_action = MeanderAction()
-  elseif object.object_type.id == "bench" or object.object_type.id == "drinks_machine" then
+  if object.object_type.id == "bench" or object.object_type.id == "drinks_machine" then
     replacement_action = IdleAction():setMustHappen(true)
   end
 

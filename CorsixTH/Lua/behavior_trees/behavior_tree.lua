@@ -8,7 +8,7 @@ local behavior_state = {
 }
 
 ---@type ABehaviorNode
-class "ABehaviorNode" (Object)
+class "ABehaviorNode"
 
 local ABehaviorNode = _G["ABehaviorNode"]
 
@@ -17,7 +17,7 @@ function ABehaviorNode:ABehaviorNode()
 end
 
 -- virtual
-function ABehaviorNode:Visit()
+function ABehaviorNode:Visit(memory)
   self:Succeed()
 end
 
@@ -84,6 +84,19 @@ function ADecoratorBehaviorNode:ADecoratorBehaviorNode(child)
   self.child = child
 end
 
+function ADecoratorBehaviorNode:Visit(memory)
+  self.child:Visit(memory)
+  self:SetState(self.child.state)
+end
+
+function ADecoratorBehaviorNode:Update()
+  if not self:IsReady() then
+    self:Ready()
+  else
+    self.child:Update()
+  end
+end
+
 ---@type ALeafBehaviorNode
 class "ALeafBehaviorNode" (ABehaviorNode)
 
@@ -100,14 +113,14 @@ function SelectorBehaviorNode:SelectorBehaviorNode(children)
 end
 
 -- override
-function SelectorBehaviorNode:Visit()
+function SelectorBehaviorNode:Visit(memory)
   if not self:IsRunning() then
     self.index = 1
   end
 
   while self.index <= #self.children do
-    local child = self.children[index]
-    child:Visit()
+    local child = self.children[self.index]
+    child:Visit(memory)
 
     if child:IsRunning() then
       self:Run()
@@ -136,23 +149,65 @@ function SelectorBehaviorNode:Update()
   self.index = 1
 end
 
+---@type RandomSelectorBehaviorNode
+class "RandomSelectorBehaviorNode" (ACompositeBehaviorNode)
+
+function RandomSelectorBehaviorNode:RandomSelectorBehaviorNode(children)
+  self:ACompositeBehaviorNode(children)
+  self.index = nil
+end
+
+-- override
+function RandomSelectorBehaviorNode:Visit(memory)
+  if not self:IsRunning() then
+    self.index = math.random(1, self:child_count())
+  end
+
+  local child = self.children[self.index]
+  child:Visit(memory)
+
+  if child:IsRunning() then
+    self:Run()
+    return
+  elseif child:IsSucceeded() then
+    self:Succeed()
+    return
+  else
+    self:Fail()
+    return
+  end
+end
+
+-- override
+function RandomSelectorBehaviorNode:Update()
+  if not self:IsReady() then
+    self:Ready()
+  else
+    for index, child in ipairs(self.children) do
+      child:Update()
+    end
+  end
+
+  self.index = 1
+end
+
 ---@type SequenceBehaviorNode
 class "SequenceBehaviorNode" (ACompositeBehaviorNode)
 
 function SequenceBehaviorNode:SequenceBehaviorNode(children)
   self:ACompositeBehaviorNode(children)
-  self.index = 1
+  self.index = nil
 end
 
 -- override
-function SequenceBehaviorNode:Visit()
+function SequenceBehaviorNode:Visit(memory)
   if not self:IsRunning() then
     self.index = 1
   end
 
   while self.index <= self:child_count() do
     local child = self.children[self.index]
-    child:Visit()
+    child:Visit(memory)
 
     if child:IsRunning() then
       self:Run()
@@ -181,37 +236,50 @@ function SequenceBehaviorNode:Update()
   self.index = 1
 end
 
+---@type NotBehaviorNode
+class "NotBehaviorNode" (ADecoratorBehaviorNode)
+
+function NotBehaviorNode:NotBehaviorNode(child)
+  self:ADecoratorBehaviorNode(child)
+end
+
+function NotBehaviorNode:Visit(memory)
+  self.child:Visit(memory)
+
+  if self.child:IsSucceeded() then
+    self:Fail()
+  elseif self.child:IsFailed() then
+    self:Succeed()
+  else
+    self:SetState(self.child:GetState())
+  end
+end
+
 ---@type WaitBehaviorNode
 class "WaitBehaviorNode" (ALeafBehaviorNode)
 
 function WaitBehaviorNode:WaitBehaviorNode(humanoid, length)
   self:ALeafBehaviorNode()
   self.humanoid = humanoid
-  self.done = false
+  self.current = 1
   self.length = length
 end
 
 -- override
-function WaitBehaviorNode:Visit()
-  if self:IsReady() then
-    self.humanoid:setTimer(self.length, function() self.done = true end)
-  elseif self:IsRunning() then
-    if self.done then
-      self:Succeed()
-      return
-    end
+function WaitBehaviorNode:Visit(memory)
+  if not self:IsRunning() then
+    self.current = 1
   end
 
-  self:Run()
-end
+  self.current = self.current + 1
 
--- override
-function WaitBehaviorNode:Update()
-  if not self:IsReady() and not self:IsRunning() then
-    self.done = false
+  if self.current <= self.length then
+    self:Run()
+    return
+  else
+    self:Succeed()
+    return
   end
-
-  ALeafBehaviorNode.Update(self) -- base call
 end
 
 ---@type StartAnimationBehaviorNode
@@ -225,23 +293,49 @@ function StartAnimationBehaviorNode:StartAnimationBehaviorNode(humanoid, animati
 end
 
 -- override
-function StartAnimationBehaviorNode:Visit()
+function StartAnimationBehaviorNode:Visit(memory)
   print("starting animation" .. self.animation)
   self.humanoid:setAnimation(self.animation, self.flags)
   self:Succeed()
 end
 
-class "BehaviorTree" (Object)
+class "BehaviorMemory"
+
+---@type BehaviorMemory
+local BehaviorMemory = _G["BehaviorMemory"]
+
+function BehaviorMemory:BehaviorMemory()
+  self.data = {}
+end
+
+function BehaviorMemory:get(key)
+  return self.data[key]
+end
+
+function BehaviorMemory:set(key, value)
+  self.data[key] = value
+end
+
+function BehaviorMemory:has(key)
+  return self.data[key] ~= nil
+end
+
+function BehaviorMemory:remove(key)
+  self.data[key] = nil
+end
+
+class "BehaviorTree"
 
 ---@type BehaviorTree
 local BehaviorTree = _G["BehaviorTree"]
 
 function BehaviorTree:BehaviorTree(root)
   self.root = root
+  self.memory = BehaviorMemory()
 end
 
 function BehaviorTree:Tick()
-  self.root:Visit()
+  self.root:Visit(self.memory)
   self.root:Update()
 end
 

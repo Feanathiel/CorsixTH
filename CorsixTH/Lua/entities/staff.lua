@@ -19,12 +19,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE. --]]
 
 corsixth.require("behavior_trees/behavior_tree")
-corsixth.require("behavior_trees/action_idle")
+corsixth.require("behavior_trees/action_meander")
 corsixth.require("behavior_trees/condition_emptyactionqueue")
 corsixth.require("announcer")
 
 local BehaviorTree = _G["BehaviorTree"]
-local ActionIdle = _G["ActionIdle"]
+local ActionMeander = _G["ActionMeander"]
 local ConditionEmptyActionQueue = _G["ConditionEmptyActionQueue"]
 
 local AnnouncementPriority = _G["AnnouncementPriority"]
@@ -499,7 +499,7 @@ function Staff:setProfile(profile)
 
   self.behavior_tree = BehaviorTree(
     ConditionEmptyActionQueue(self,
-        ActionIdle(self)
+        ActionMeander(self)
     )
   )
 end
