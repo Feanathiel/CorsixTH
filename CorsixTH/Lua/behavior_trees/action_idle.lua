@@ -12,7 +12,7 @@ class "ActionIdle" (SequenceBehaviorNode)
 ---@type ActionIdle
 local ActionIdle = _G["ActionIdle"]
 
-function ActionIdle:ActionIdle(humanoid, duration)
+function ActionIdle:ActionIdle(humanoid, tag_duration)
   local direction = humanoid.last_move_direction
   local anim = nil
   local flags = nil
@@ -33,7 +33,7 @@ function ActionIdle:ActionIdle(humanoid, duration)
 
   self:SequenceBehaviorNode({
     StartAnimationBehaviorNode(humanoid, anim, flags),
-    WaitBehaviorNode(humanoid, duration)
+    WaitBehaviorNode(humanoid, tag_duration)
   })
 end
 

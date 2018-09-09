@@ -144,11 +144,16 @@ function ActionWalkOneTile:Visit(memory)
   local x2, y2 = path_x[path_index+1], path_y[path_index+1]
 
   local factor
+  local quantity
   if humanoid.speed and humanoid.speed == "fast" then
     factor = 2
+    quantity = 4
   else
     factor = 1
+    quantity = 8
   end
+
+  memory:set("tag_walk_duration", quantity)
 
   local world = humanoid.world
   local notify_object = world:getObjectToNotifyOfOccupants(x2, y2)
@@ -241,12 +246,6 @@ class "ActionWalkToPoint" (ADecoratorBehaviorNode)
 local ActionWalkToPoint = _G["ActionWalkToPoint"]
 
 function ActionWalkToPoint:ActionWalkToPoint(humanoid)
-  -- hardcoded for the time being
-  local quantity = 8
-  if humanoid.speed and humanoid.speed == "fast" then
-    quantity = 4
-  end
-
   self:ADecoratorBehaviorNode(
     SequenceBehaviorNode({
       ActionFindPath(humanoid),
@@ -271,7 +270,7 @@ function ActionWalkToPoint:ActionWalkToPoint(humanoid)
             ]]
             SequenceBehaviorNode({
               ActionWalkOneTile(humanoid), -- seq: set anim, set speed/direction, set wait
-              WaitBehaviorNode(humanoid, quantity)
+              WaitBehaviorNode(humanoid, "tag_walk_duration")
             })
           }),
           ActionPathNodeReached()

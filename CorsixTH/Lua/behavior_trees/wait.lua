@@ -8,11 +8,11 @@ class "WaitBehaviorNode" (ALeafBehaviorNode)
 
 local WaitBehaviorNode = _G["WaitBehaviorNode"]
 
-function WaitBehaviorNode:WaitBehaviorNode(humanoid, length)
+function WaitBehaviorNode:WaitBehaviorNode(humanoid, wait_tag)
   self:ALeafBehaviorNode()
   self.humanoid = humanoid
   self.current = 1
-  self.length = length
+  self.wait_tag = wait_tag
 end
 
 -- override
@@ -22,8 +22,13 @@ function WaitBehaviorNode:Visit(memory)
   end
 
   self.current = self.current + 1
+  local length = memory:get(self.wait_tag)
 
-  if self.current <= self.length then
+  if length == nil then
+    print("what")
+  end
+
+  if self.current <= length then
     self:Run()
     return
   else

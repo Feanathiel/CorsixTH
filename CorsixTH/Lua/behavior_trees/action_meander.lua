@@ -19,6 +19,7 @@ class "ActionFindMeanderLocation" (ALeafBehaviorNode)
 local ActionFindMeanderLocation = _G["ActionFindMeanderLocation"]
 
 function ActionFindMeanderLocation:ActionFindMeanderLocation(humanoid)
+  self:ALeafBehaviorNode()
   self.humanoid = humanoid
 end
 
@@ -36,22 +37,36 @@ function ActionFindMeanderLocation:Visit(memory)
   self:Succeed()
 end
 
+class "SetIdleTime" (ALeafBehaviorNode)
+
+local SetIdleTime = _G["SetIdleTime"]
+
+function SetIdleTime:SetIdleTime()
+  self:ALeafBehaviorNode()
+end
+
+function SetIdleTime:Visit(memory)
+  local idle_time = math.random(5 ,30)
+  memory:set("tag_idle_time", idle_time)
+  self:Succeed()
+end
+
 class "ActionMeander" (ADecoratorBehaviorNode)
 
 ---@type ActionMeander
 local ActionMeander = _G["ActionMeander"]
 
 function ActionMeander:ActionMeander(humanoid)
-  -- hardcoded for now
-  local idle_time = math.random(5 ,30)
-
   self:ADecoratorBehaviorNode(
     RandomSelectorBehaviorNode({
       SequenceBehaviorNode({
         ActionFindMeanderLocation(humanoid),
         ActionWalkToPoint(humanoid)
       }),
-      ActionIdle(humanoid, idle_time)
+      SequenceBehaviorNode({
+        SetIdleTime(),
+        ActionIdle(humanoid, "tag_idle_time")
+      })
     })
   )
 end
