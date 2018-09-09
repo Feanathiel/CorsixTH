@@ -3,6 +3,7 @@ corsixth.require("behavior_trees/behavior_tree")
 
 local ALeafBehaviorNode = _G["ALeafBehaviorNode"]
 local ADecoratorBehaviorNode = _G["ADecoratorBehaviorNode"]
+local LoopConditionBehaviorNode = _G["LoopConditionBehaviorNode"]
 local SequenceBehaviorNode = _G["SequenceBehaviorNode"]
 local StartAnimationBehaviorNode = _G["StartAnimationBehaviorNode"]
 local WaitBehaviorNode = _G["WaitBehaviorNode"]
@@ -245,22 +246,17 @@ function ActionWalkToPoint:ActionWalkToPoint(humanoid)
   self:ADecoratorBehaviorNode(
     SequenceBehaviorNode({
       ActionFindPath(humanoid),
-      SequenceBehaviorNode({
-        --[[
-        ConditionalLoopNode(
-          SequenceBehaviorNode({
-            NotBehaviorNode(
+      LoopConditionBehaviorNode(
+        SequenceBehaviorNode({
+          NotBehaviorNode(
               ConditionPathDestinationReachedNode()
-            ),
-            NotBehaviorNode(
+          )
+          --[[,
+          NotBehaviorNode(
               ConditionPathBlockedNode()
-            )
-          })
-        ),
-        ]]
-        NotBehaviorNode(
-            ConditionPathDestinationReachedNode()
-        ),
+          )
+          ]]
+        }),
         SequenceBehaviorNode({
           SelectorBehaviorNode({
             --[[
@@ -276,7 +272,7 @@ function ActionWalkToPoint:ActionWalkToPoint(humanoid)
           }),
           ActionPathNodeReached()
         })
-      }),
+      ),
       StopMovingNode(humanoid)
     })
   )

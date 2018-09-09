@@ -38,7 +38,7 @@ local ActionMeander = _G["ActionMeander"]
 
 function ActionMeander:ActionMeander(humanoid)
   -- hardcoded for now
-  local idle_time = math.random(5 ,90)
+  local idle_time = math.random(5 ,30)
 
   self:ADecoratorBehaviorNode(
     RandomSelectorBehaviorNode({
