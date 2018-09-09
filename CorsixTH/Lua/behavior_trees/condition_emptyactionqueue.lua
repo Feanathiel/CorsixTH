@@ -1,5 +1,5 @@
 
-corsixth.require("behavior_trees/behavior_tree")
+corsixth.require("behavior_trees/decorator")
 
 local ADecoratorBehaviorNode = _G["ADecoratorBehaviorNode"]
 

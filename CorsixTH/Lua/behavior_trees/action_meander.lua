@@ -1,7 +1,12 @@
-corsixth.require("behavior_trees/behavior_tree")
-corsixth.require("behavior_trees/action_walk")
-corsixth.require("behavior_trees/action_idle")
 
+corsixth.require("behavior_trees/action_idle")
+corsixth.require("behavior_trees/action_walk")
+corsixth.require("behavior_trees/decorator")
+corsixth.require("behavior_trees/leaf")
+corsixth.require("behavior_trees/sequence")
+corsixth.require("behavior_trees/random_selector")
+
+local ADecoratorBehaviorNode = _G["ADecoratorBehaviorNode"]
 local SequenceBehaviorNode = _G["SequenceBehaviorNode"]
 local RandomSelectorBehaviorNode = _G["RandomSelectorBehaviorNode"]
 local ALeafBehaviorNode = _G["ALeafBehaviorNode"]
@@ -50,4 +55,3 @@ function ActionMeander:ActionMeander(humanoid)
     })
   )
 end
-

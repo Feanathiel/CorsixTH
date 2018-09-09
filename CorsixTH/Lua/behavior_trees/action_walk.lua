@@ -1,11 +1,15 @@
 
-corsixth.require("behavior_trees/behavior_tree")
+corsixth.require("behavior_trees/decorator")
+corsixth.require("behavior_trees/leaf")
+corsixth.require("behavior_trees/loop_condition")
+corsixth.require("behavior_trees/not")
+corsixth.require("behavior_trees/selector")
+corsixth.require("behavior_trees/sequence")
 
 local ALeafBehaviorNode = _G["ALeafBehaviorNode"]
 local ADecoratorBehaviorNode = _G["ADecoratorBehaviorNode"]
 local LoopConditionBehaviorNode = _G["LoopConditionBehaviorNode"]
 local SequenceBehaviorNode = _G["SequenceBehaviorNode"]
-local StartAnimationBehaviorNode = _G["StartAnimationBehaviorNode"]
 local WaitBehaviorNode = _G["WaitBehaviorNode"]
 local NotBehaviorNode = _G["NotBehaviorNode"]
 local SelectorBehaviorNode = _G["SelectorBehaviorNode"]

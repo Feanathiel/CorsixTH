@@ -1,5 +1,7 @@
 
-corsixth.require("behavior_trees/behavior_tree")
+corsixth.require("behavior_trees/sequence")
+corsixth.require("behavior_trees/start_animation")
+corsixth.require("behavior_trees/wait")
 
 local SequenceBehaviorNode = _G["SequenceBehaviorNode"]
 local StartAnimationBehaviorNode = _G["StartAnimationBehaviorNode"]
