@@ -357,8 +357,8 @@ function Room:onHumanoidEnter(humanoid)
         end
       else
         self.humanoids[humanoid] = true
-        humanoid:setNextAction(self:createLeaveAction())
-        humanoid:queueAction(MeanderAction())
+        --humanoid:setNextAction(self:createLeaveAction())
+        --humanoid:queueAction(MeanderAction())
         humanoid:adviseWrongPersonForThisRoom()
       end
     else

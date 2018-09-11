@@ -1,4 +1,5 @@
 
+corsixth.require("behavior_trees/action_usedoor")
 corsixth.require("behavior_trees/behavior_variable")
 corsixth.require("behavior_trees/decorator")
 corsixth.require("behavior_trees/leaf")
@@ -15,6 +16,7 @@ local WaitBehaviorNode = _G["WaitBehaviorNode"]
 local NotBehaviorNode = _G["NotBehaviorNode"]
 local SelectorBehaviorNode = _G["SelectorBehaviorNode"]
 local BehaviorVariable = _G["BehaviorVariable"]
+local ActionUseDoor = _G["ActionUseDoor"]
 
 class "ActionFindPath" (ALeafBehaviorNode)
 
@@ -74,17 +76,18 @@ function ConditionPathDestinationReachedNode:Visit(memory)
   end
 end
 
-class "ConditionIsFacingDoor" (ADecoratorBehaviorNode)
+class "ConditionIsFacingDoor" (ALeafBehaviorNode)
 
 ---@type ConditionIsFacingDoor
 local ConditionIsFacingDoor = _G["ConditionIsFacingDoor"]
 
 
-function ConditionIsFacingDoor:ConditionIsFacingDoor(humanoid, path_var, path_index_var, child)
-  self:ADecoratorBehaviorNode(child)
+function ConditionIsFacingDoor:ConditionIsFacingDoor(humanoid, path_var, path_index_var, door_var)
+  self:ALeafBehaviorNode()
   self.humanoid = humanoid
   self.path_var = path_var
   self.path_index_var = path_index_var
+  self.door_var = door_var
 end
 
 function ConditionIsFacingDoor:Visit(memory)
@@ -100,14 +103,18 @@ function ConditionIsFacingDoor:Visit(memory)
   local x1, y1 = path_x[path_index  ], path_y[path_index  ]
   local x2, y2 = path_x[path_index+1], path_y[path_index+1]
 
+  local direction
+
   if x1 ~= x2 then
     if x1 < x2 then
       if map and map:getCellFlags(x2, y2).doorWest then
         is_facing_door = true
+        direction = "east"
       end
     else
       if map and map:getCellFlags(x1, y1).doorWest then
         is_facing_door = true
+        direction = "west"
       else
       end
     end
@@ -115,17 +122,43 @@ function ConditionIsFacingDoor:Visit(memory)
     if y1 < y2 then
       if map and map:getCellFlags(x2, y2).doorNorth then
         is_facing_door = true
+        direction = "south"
       end
     else
       if map and map:getCellFlags(x1, y1).doorNorth then
         is_facing_door = true
+        direction = "north"
       end
     end
   end
 
   if is_facing_door then
-    self.child:Visit(memory)
-    self:SetState(self.child:GetState())
+    local door_x = x1
+    local door_y = y1
+
+    if direction == "east" then
+      door_x = door_x + 1
+    elseif direction == "south" then
+      door_y = door_y + 1
+    end
+
+    local door = humanoid.world:getObject(door_x, door_y, "door")
+    local swinging = false
+
+    if not door then
+      swinging = true
+      door = humanoid.world:getObject(door_x, door_y, "swing_door_right")
+    end
+
+    self.door_var:set({
+      door = door,
+      swinging = swinging,
+      direction = direction,
+      pos_x = door_x,
+      pos_y = door_y
+    })
+
+    self:Succeed()
   else
     self:Fail()
   end
@@ -262,6 +295,7 @@ function ActionWalkToPoint:ActionWalkToPoint(humanoid, path_target_var)
   local path_var = BehaviorVariable("path")
   local path_index_var = BehaviorVariable("path_index")
   local walk_duration_var = BehaviorVariable("walk_duration", 1)
+  local door_var = BehaviorVariable("door")
 
   self:ADecoratorBehaviorNode(
     SequenceBehaviorNode({
@@ -279,12 +313,10 @@ function ActionWalkToPoint:ActionWalkToPoint(humanoid, path_target_var)
         }),
         SequenceBehaviorNode({
           SelectorBehaviorNode({
-            --[[
             SequenceBehaviorNode({
-              ConditionIsFacingDoor(humanoid, path_var, path_index_var, nil),
-              ActionUseDoor()
+              ConditionIsFacingDoor(humanoid, path_var, path_index_var, door_var),
+              ActionUseDoor(humanoid, door_var)
             }),
-            ]]
             SequenceBehaviorNode({
               ActionWalkOneTile(humanoid, path_var, path_index_var, walk_duration_var), -- seq: set anim, set speed/direction, set wait
               WaitBehaviorNode(humanoid, walk_duration_var)

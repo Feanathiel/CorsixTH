@@ -22,8 +22,10 @@ corsixth.require("behavior_trees/index")
 corsixth.require("announcer")
 
 local BehaviorTree = _G["BehaviorTree"]
+local ActionLeaveRoom = _G["ActionLeaveRoom"]
 local ActionMeander = _G["ActionMeander"]
 local ConditionEmptyActionQueue = _G["ConditionEmptyActionQueue"]
+local SelectorBehaviorNode = _G["SelectorBehaviorNode"]
 
 local AnnouncementPriority = _G["AnnouncementPriority"]
 
@@ -325,9 +327,18 @@ function Staff:isLearningOnTheJob()
   local room = self:getRoom()
 
   -- Staff is in room but not training room, staff room, or toilets; is a doctor; and is using something
-  return room and room.room_info.id ~= "training" and
-      room.room_info.id ~= "staff_room" and room.room_info.id ~= "toilets" and
-      self.humanoid_class == "Doctor" and self:getCurrentAction().name == "use_object"
+  if room and room.room_info.id ~= "training" and
+      room.room_info.id ~= "staff_room" and
+      room.room_info.id ~= "toilets" and
+      self.humanoid_class == "Doctor" then
+    local action = self:tryGetCurrentAction()
+
+    if action then
+      return action.name == "use_object"
+    end
+  end
+
+  return false
 end
 
 
@@ -497,7 +508,10 @@ function Staff:setProfile(profile)
 
   self.behavior_tree = BehaviorTree(
     ConditionEmptyActionQueue(self,
-        ActionMeander(self)
+        SelectorBehaviorNode({
+          ActionLeaveRoom(self), -- when in doubt, leave room
+          ActionMeander(self)
+        })
     )
   )
 end
