@@ -1,4 +1,5 @@
 
+corsixth.require("behavior_trees/behavior_variable")
 corsixth.require("behavior_trees/decorator")
 corsixth.require("behavior_trees/leaf")
 corsixth.require("behavior_trees/loop_condition")
@@ -13,19 +14,23 @@ local SequenceBehaviorNode = _G["SequenceBehaviorNode"]
 local WaitBehaviorNode = _G["WaitBehaviorNode"]
 local NotBehaviorNode = _G["NotBehaviorNode"]
 local SelectorBehaviorNode = _G["SelectorBehaviorNode"]
+local BehaviorVariable = _G["BehaviorVariable"]
 
 class "ActionFindPath" (ALeafBehaviorNode)
 
 ---@type ActionFindPath
 local ActionFindPath = _G["ActionFindPath"]
 
-function ActionFindPath:ActionFindPath(humanoid)
+function ActionFindPath:ActionFindPath(humanoid, path_var, path_index_var, path_target_var)
   self:ALeafBehaviorNode()
   self.humanoid = humanoid
+  self.path_var = path_var
+  self.path_index_var = path_index_var
+  self.path_target_var = path_target_var
 end
 
 function ActionFindPath:Visit(memory)
-  local path_target = memory:get("path_target")
+  local path_target = self.path_target_var:get()
   local x = path_target.x
   local y = path_target.y
 
@@ -37,8 +42,8 @@ function ActionFindPath:Visit(memory)
     return
   end
 
-  memory:set("path", { path_x = path_x, path_y = path_y })
-  memory:set("path_index", 1)
+  self.path_var:set({ path_x = path_x, path_y = path_y })
+  self.path_index_var:set(1)
   self:Succeed()
 end
 
@@ -47,13 +52,15 @@ class "ConditionPathDestinationReachedNode" (ALeafBehaviorNode)
 ---@type ConditionPathDestinationReachedNode
 local ConditionPathDestinationReachedNode = _G["ConditionPathDestinationReachedNode"]
 
-function ConditionPathDestinationReachedNode:ConditionPathDestinationReachedNode()
+function ConditionPathDestinationReachedNode:ConditionPathDestinationReachedNode(path_var, path_index_var)
   self:ALeafBehaviorNode()
+  self.path_var = path_var
+  self.path_index_var = path_index_var
 end
 
 function ConditionPathDestinationReachedNode:Visit(memory)
-  local path = memory:get("path")
-  local path_index = memory:get("path_index")
+  local path = self.path_var:get()
+  local path_index = self.path_index_var:get()
   local path_x = path.path_x
 
   local next_pathnode_missing = path_x[path_index+1] == nil
@@ -73,9 +80,11 @@ class "ConditionIsFacingDoor" (ADecoratorBehaviorNode)
 local ConditionIsFacingDoor = _G["ConditionIsFacingDoor"]
 
 
-function ConditionIsFacingDoor:ConditionIsFacingDoor(humanoid, child)
+function ConditionIsFacingDoor:ConditionIsFacingDoor(humanoid, path_var, path_index_var, child)
   self:ADecoratorBehaviorNode(child)
   self.humanoid = humanoid
+  self.path_var = path_var
+  self.path_index_var = path_index_var
 end
 
 function ConditionIsFacingDoor:Visit(memory)
@@ -84,8 +93,8 @@ function ConditionIsFacingDoor:Visit(memory)
 
   local is_facing_door = false
 
-  local path = memory:get("path")
-  local path_index = memory:get("path_index")
+  local path = self.path_var:get()
+  local path_index = self.path_index_var:get()
   local path_x = path.path_x
   local path_y = path.path_y
   local x1, y1 = path_x[path_index  ], path_y[path_index  ]
@@ -127,17 +136,20 @@ class "ActionWalkOneTile" (ALeafBehaviorNode)
 ---@type ActionWalkOneTile
 local ActionWalkOneTile = _G["ActionWalkOneTile"]
 
-function ActionWalkOneTile:ActionWalkOneTile(humanoid)
+function ActionWalkOneTile:ActionWalkOneTile(humanoid, path_var, path_index_var, walk_duration_var)
   self:ALeafBehaviorNode()
   self.humanoid = humanoid
+  self.path_var = path_var
+  self.path_index_var = path_index_var
+  self.walk_duration_var = walk_duration_var
 end
 
 function ActionWalkOneTile:Visit(memory)
   local humanoid = self.humanoid
   local anims = humanoid.walk_anims
 
-  local path = memory:get("path")
-  local path_index = memory:get("path_index")
+  local path = self.path_var:get()
+  local path_index = self.path_index_var:get()
   local path_x = path.path_x
   local path_y = path.path_y
   local x1, y1 = path_x[path_index  ], path_y[path_index  ]
@@ -153,7 +165,7 @@ function ActionWalkOneTile:Visit(memory)
     quantity = 8
   end
 
-  memory:set("tag_walk_duration", quantity)
+  self.walk_duration_var:set(quantity)
 
   local world = humanoid.world
   local notify_object = world:getObjectToNotifyOfOccupants(x2, y2)
@@ -205,15 +217,16 @@ class "ActionPathNodeReached" (ALeafBehaviorNode)
 ---@type ActionPathNodeReached
 local ActionPathNodeReached = _G["ActionPathNodeReached"]
 
-function ActionPathNodeReached:ActionPathNodeReached()
+function ActionPathNodeReached:ActionPathNodeReached(path_index_var)
   self:ALeafBehaviorNode()
+  self.path_index_var = path_index_var
 end
 
 function ActionPathNodeReached:Visit(memory)
-  local path_index = memory:get("path_index")
+  local path_index = self.path_index_var:get()
 
   path_index = path_index + 1
-  memory:set("path_index", path_index)
+  self.path_index_var:set(path_index)
 
   self:Succeed()
 end
@@ -223,20 +236,20 @@ class "StopMovingNode" (ALeafBehaviorNode)
 ---@type StopMovingNode
 local StopMovingNode = _G["StopMovingNode"]
 
-function StopMovingNode:StopMovingNode(humanoid)
+function StopMovingNode:StopMovingNode(humanoid, path_var, path_index_var)
   self:ALeafBehaviorNode()
   self.humanoid = humanoid
+  self.path_var = path_var
+  self.path_index_var = path_index_var
 end
 
 function StopMovingNode:Visit(memory)
-  local path = memory:get("path")
-  local path_index = memory:get("path_index")
+  local path = self.path_var:get()
+  local path_index = self.path_index_var:get()
   local x1, y1 = path.path_x[path_index], path.path_y[path_index]
 
   self.humanoid:setTilePositionSpeed(x1, y1)
 
-  memory:remove("path")
-  memory:remove("path_index")
   self:Succeed()
 end
 
@@ -245,14 +258,18 @@ class "ActionWalkToPoint" (ADecoratorBehaviorNode)
 ---@type ActionWalkToPoint
 local ActionWalkToPoint = _G["ActionWalkToPoint"]
 
-function ActionWalkToPoint:ActionWalkToPoint(humanoid)
+function ActionWalkToPoint:ActionWalkToPoint(humanoid, path_target_var)
+  local path_var = BehaviorVariable("path")
+  local path_index_var = BehaviorVariable("path_index")
+  local walk_duration_var = BehaviorVariable("walk_duration", 1)
+
   self:ADecoratorBehaviorNode(
     SequenceBehaviorNode({
-      ActionFindPath(humanoid),
+      ActionFindPath(humanoid, path_var, path_index_var, path_target_var),
       LoopConditionBehaviorNode(
         SequenceBehaviorNode({
           NotBehaviorNode(
-              ConditionPathDestinationReachedNode()
+              ConditionPathDestinationReachedNode(path_var, path_index_var)
           )
           --[[,
           NotBehaviorNode(
@@ -264,19 +281,19 @@ function ActionWalkToPoint:ActionWalkToPoint(humanoid)
           SelectorBehaviorNode({
             --[[
             SequenceBehaviorNode({
-              ConditionIsFacingDoor(),
+              ConditionIsFacingDoor(humanoid, path_var, path_index_var, nil),
               ActionUseDoor()
             }),
             ]]
             SequenceBehaviorNode({
-              ActionWalkOneTile(humanoid), -- seq: set anim, set speed/direction, set wait
-              WaitBehaviorNode(humanoid, "tag_walk_duration")
+              ActionWalkOneTile(humanoid, path_var, path_index_var, walk_duration_var), -- seq: set anim, set speed/direction, set wait
+              WaitBehaviorNode(humanoid, walk_duration_var)
             })
           }),
-          ActionPathNodeReached()
+          ActionPathNodeReached(path_index_var)
         })
       ),
-      StopMovingNode(humanoid)
+      StopMovingNode(humanoid, path_var, path_index_var)
     })
   )
 
